@@ -1,24 +1,45 @@
-import React from 'react';
-import logo from './logo.svg';
-import './App.css';
+import React, { useEffect } from "react";
+import "./App.css";
+
+import { db } from "./firebase/firebase.config";
+import Chat from "./firebase/types/chat";
 
 function App() {
+  const [message, setMessage] = React.useState("");
+  const [messages, setMessages] = React.useState<Chat[] | []>([]);
+
+  useEffect(() => {
+    return db.chat.onSnapshot((data) => {
+      setMessages([]);
+      const messages = data.docs.map((doc) => {
+        return { id: doc.id, ...doc.data() };
+      });
+      setMessages(messages);
+    });
+  }, []);
+
+  const addMessage = () => {
+    if (message) {
+      db.chat.add({
+        senderId: "1234",
+        senderName: "Anonimo",
+        message: message,
+        timestamp: new Date().getMilliseconds(),
+      });
+      setMessage("");
+    }
+  };
+
   return (
     <div className="App">
-      <header className="App-header">
-        <img src={logo} className="App-logo" alt="logo" />
-        <p>
-          Edit <code>src/App.tsx</code> and save to reload.
-        </p>
-        <a
-          className="App-link"
-          href="https://reactjs.org"
-          target="_blank"
-          rel="noopener noreferrer"
-        >
-          Learn React
-        </a>
-      </header>
+      {messages.map((message) => (
+        <p>{message.message}</p>
+      ))}
+      <input
+        value={message}
+        onChange={(e) => setMessage(e.target.value)}
+      ></input>
+      <button onClick={addMessage}>Send Me</button>
     </div>
   );
 }
